@@ -78,7 +78,7 @@ func (s *Site2RSS) GetLinks(linkPattern string) *Site2RSS {
 		if len(links) < s.MaxFeedItems {
 			chunk = len(links)
 		}
-		s.Links = links[:chunk]
+		s.Links = append([]string(nil), links[:chunk]...)
 	}
 	return s
 }
