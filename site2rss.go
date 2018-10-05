@@ -70,9 +70,9 @@ func (s *Site2RSS) MakeAllLinksAbsolute(doc *goquery.Document) {
 func (s *Site2RSS) GetLinks(linkPattern string) *Site2RSS {
 	doc, err := goquery.NewDocument(s.SourceURL.String())
 	if err == nil {
-		links := doc.Find(linkPattern).Map(func(i int, s *goquery.Selection) string {
-			link, _ := s.Attr("href")
-			return link
+		links := doc.Find(linkPattern).Map(func(i int, sel *goquery.Selection) string {
+			link, _ := sel.Attr("href")
+			return s.AbsoluteURL(link)
 		})
 		chunk := s.MaxFeedItems
 		if len(links) < s.MaxFeedItems {
@@ -85,9 +85,8 @@ func (s *Site2RSS) GetLinks(linkPattern string) *Site2RSS {
 
 // GetFeedItems extracts details using a user-defined function
 func (s *Site2RSS) GetFeedItems(f itemCallback) *Site2RSS {
-	feedItems := make([]*feeds.Item, len(s.Links))
+	s.feed.Items = make([]*feeds.Item, len(s.Links))
 	for i := 0; i < len(s.Links); i++ {
-		url := s.AbsoluteURL(s.Links[i])
 		s.wg.Add(1)
 		go func(url string, item **feeds.Item) {
 			defer s.wg.Done()
@@ -96,10 +95,9 @@ func (s *Site2RSS) GetFeedItems(f itemCallback) *Site2RSS {
 				s.MakeAllLinksAbsolute(itemDoc)
 				*item = f(itemDoc)
 			}
-		}(url, &feedItems[i])
+		}(s.Links[i], &s.feed.Items[i])
 	}
 	s.wg.Wait()
-	s.feed.Items = feedItems
 	return s
 }
 
