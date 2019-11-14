@@ -64,7 +64,7 @@ func (s *Site2RSS) AbsoluteURL(rpath string) string {
 }
 
 // MakeAllLinksAbsolute makes all links absolute in document
-func (s *Site2RSS) MakeAllLinksAbsolute(doc *goquery.Document) {
+func (s *Site2RSS) MakeAllLinksAbsolute(doc *Document) {
 	doc.Find("a,img").Each(func(i int, sel *goquery.Selection) {
 		if link, ok := sel.Attr("src"); link != "" && ok {
 			u, _ := url.Parse(link)
