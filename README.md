@@ -12,22 +12,20 @@ import (
     "time"
 
     "github.com/n0madic/site2rss"
-    "github.com/PuerkitoBio/goquery"
-    "github.com/gorilla/feeds"
 )
 
 func rssRequest(w http.ResponseWriter, r *http.Request) {
     rss, err := site2rss.NewFeed("https://www.sciencealert.com/the-latest", "Science Alert").
         GetLinks("div.titletext > a").
-        GetFeedItems(func(doc *goquery.Document) *feeds.Item {
+        GetFeedItems(func(doc *site2rss.Document) *site2rss.Item {
             author := doc.Find(".author-name-name").First().Text()
             title := doc.Find(".article-title").First().Text()
             created, _ := time.Parse("02 Jan 2006", doc.Find(".author-name-date").First().Text())
             desc, _ := doc.Find(".article-fulltext").Html()
-            return &feeds.Item{
+            return &site2rss.Item{
                 Title:       title,
-                Author:      &feeds.Author{Name: author},
-                Link:        &feeds.Link{Href: doc.Url.String()},
+                Author:      &site2rss.Author{Name: author},
+                Link:        &site2rss.Link{Href: doc.Url.String()},
                 Id:          doc.Url.String(),
                 Description: desc,
                 Created:     created,

@@ -9,6 +9,21 @@ import (
 	"github.com/gorilla/feeds"
 )
 
+// Document proxy type
+type Document = goquery.Document
+
+// Author proxy type
+type Author = feeds.Author
+
+// Enclosure proxy type
+type Enclosure = feeds.Enclosure
+
+// Item proxy type
+type Item = feeds.Item
+
+// Link proxy type
+type Link = feeds.Link
+
 // Site2RSS object
 type Site2RSS struct {
 	baseURL      string
@@ -19,7 +34,7 @@ type Site2RSS struct {
 	wg           sync.WaitGroup
 }
 
-type itemCallback func(doc *goquery.Document) *feeds.Item
+type itemCallback func(doc *Document) *Item
 
 // NewFeed return a new Site2RSS feed object
 func NewFeed(source string, title string) *Site2RSS {
