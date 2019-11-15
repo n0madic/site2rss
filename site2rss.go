@@ -4,25 +4,21 @@ import (
 	"fmt"
 	"net/url"
 	"sync"
+	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/gorilla/feeds"
 )
 
-// Document proxy type
-type Document = goquery.Document
-
-// Author proxy type
-type Author = feeds.Author
-
-// Enclosure proxy type
-type Enclosure = feeds.Enclosure
-
-// Item proxy type
-type Item = feeds.Item
-
-// Link proxy type
-type Link = feeds.Link
+// FindOnPage settings for parse page to feed item
+type FindOnPage struct {
+	Author      string
+	Date        string
+	DateFormat  string
+	Description string
+	Image       string
+	Title       string
+}
 
 // Site2RSS object
 type Site2RSS struct {
@@ -30,11 +26,23 @@ type Site2RSS struct {
 	feed         *feeds.Feed
 	Links        []string
 	MaxFeedItems int
+	parseOpts    *FindOnPage
+	sourceDoc    *Document
 	SourceURL    *url.URL
 	wg           sync.WaitGroup
 }
 
-type itemCallback func(doc *Document) *Item
+// ParseResult return results of parsing single page
+type ParseResult struct {
+	Authors      []string
+	Dates        []string
+	Descriptions []string
+	Images       []string
+	Titles       []string
+}
+
+type itemCallback func(doc *Document, opts *FindOnPage) *Item
+type pageCallback func(doc *Document, opts *FindOnPage) *ParseResult
 
 // NewFeed return a new Site2RSS feed object
 func NewFeed(source string, title string) *Site2RSS {
@@ -50,6 +58,18 @@ func NewFeed(source string, title string) *Site2RSS {
 		Title: title,
 		Link:  &feeds.Link{Href: s.baseURL},
 	}
+	return s
+}
+
+// SetMaxFeedItems set max feed items
+func (s *Site2RSS) SetMaxFeedItems(max int) *Site2RSS {
+	s.MaxFeedItems = max
+	return s
+}
+
+// SetParseOptions for parse page
+func (s *Site2RSS) SetParseOptions(opts *FindOnPage) *Site2RSS {
+	s.parseOpts = opts
 	return s
 }
 
@@ -83,9 +103,10 @@ func (s *Site2RSS) MakeAllLinksAbsolute(doc *Document) {
 
 // GetLinks get a list of links by pattern
 func (s *Site2RSS) GetLinks(linkPattern string) *Site2RSS {
-	doc, err := goquery.NewDocument(s.SourceURL.String())
+	var err error
+	s.sourceDoc, err = goquery.NewDocument(s.SourceURL.String())
 	if err == nil {
-		links := doc.Find(linkPattern).Map(func(i int, sel *goquery.Selection) string {
+		links := s.sourceDoc.Find(linkPattern).Map(func(i int, sel *goquery.Selection) string {
 			link, _ := sel.Attr("href")
 			return s.AbsoluteURL(link)
 		})
@@ -98,8 +119,8 @@ func (s *Site2RSS) GetLinks(linkPattern string) *Site2RSS {
 	return s
 }
 
-// GetFeedItems extracts details using a user-defined function
-func (s *Site2RSS) GetFeedItems(f itemCallback) *Site2RSS {
+// GetItemsFromLinks extracts details from remote links using a user-defined function
+func (s *Site2RSS) GetItemsFromLinks(f itemCallback) *Site2RSS {
 	s.feed.Items = make([]*feeds.Item, len(s.Links))
 	for i := 0; i < len(s.Links); i++ {
 		s.wg.Add(1)
@@ -108,12 +129,52 @@ func (s *Site2RSS) GetFeedItems(f itemCallback) *Site2RSS {
 			itemDoc, err := goquery.NewDocument(url)
 			if err == nil {
 				s.MakeAllLinksAbsolute(itemDoc)
-				*item = f(itemDoc)
+				*item = f(itemDoc, s.parseOpts)
 			}
 		}(s.Links[i], &s.feed.Items[i])
 	}
 	s.wg.Wait()
 	return s
+}
+
+// GetItemsFromSourcePage extracts feed items from source page
+func (s *Site2RSS) GetItemsFromSourcePage(f pageCallback) *Site2RSS {
+	if len(s.Links) > 0 {
+		s.feed.Items = make([]*feeds.Item, len(s.Links))
+		for i := 0; i < len(s.Links); i++ {
+			s.feed.Items[i] = &feeds.Item{
+				Id:   s.Links[i],
+				Link: &feeds.Link{Href: s.Links[i]},
+			}
+			parse := f(s.sourceDoc, s.parseOpts)
+			if len(parse.Authors) >= len(s.Links) && parse.Authors[i] != "" {
+				s.feed.Items[i].Author = &feeds.Author{Name: parse.Authors[i]}
+			}
+			if len(parse.Descriptions) >= len(s.Links) {
+				s.feed.Items[i].Description = parse.Descriptions[i]
+			}
+			if len(parse.Dates) >= len(s.Links) && parse.Dates[i] != "" {
+				created, err := time.Parse(s.parseOpts.DateFormat, parse.Dates[i])
+				if err == nil {
+					s.feed.Items[i].Created = created
+				} else {
+					s.feed.Items[i].Created = humanTimeParse(parse.Dates[i])
+				}
+			}
+			if len(parse.Images) >= len(s.Links) && parse.Images[i] != "" {
+				s.feed.Items[i].Enclosure = genEnclosure(s.AbsoluteURL(parse.Images[i]))
+			}
+			if len(parse.Titles) >= len(s.Links) {
+				s.feed.Items[i].Title = parse.Titles[i]
+			}
+		}
+	}
+	return s
+}
+
+// GetAtom return feed xml
+func (s *Site2RSS) GetAtom() (string, error) {
+	return s.feed.ToAtom()
 }
 
 // GetRSS return feed xml
