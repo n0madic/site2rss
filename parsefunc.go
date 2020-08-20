@@ -5,8 +5,8 @@ import (
 	"time"
 )
 
-// ItemParse is default function for parsing items from remote page
-func ItemParse(doc *Document, opts *FindOnPage) *Item {
+// ParseItem is default function for parsing items from remote page
+func ParseItem(doc *Document, opts *FindOnPage) *Item {
 	item := &Item{
 		Link: &Link{Href: doc.Url.String()},
 		Id:   doc.Url.String(),

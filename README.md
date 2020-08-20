@@ -25,7 +25,7 @@ func rssRequest(w http.ResponseWriter, r *http.Request) {
             DateFormat:  "02 Jan 2006",
             Description: ".article-fulltext",
         }).
-        GetItemsFromLinks(site2rss.ItemParse).
+        GetItemsFromLinks(site2rss.ParseItem).
         GetRSS()
     if err != nil {
         w.WriteHeader(http.StatusInternalServerError)
