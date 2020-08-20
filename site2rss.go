@@ -18,6 +18,7 @@ type FindOnPage struct {
 	Description string
 	Image       string
 	Title       string
+	URL         string
 }
 
 // Site2RSS object
@@ -43,6 +44,7 @@ type ParseResult struct {
 
 type itemCallback func(doc *Document, opts *FindOnPage) *Item
 type pageCallback func(doc *Document, opts *FindOnPage) *ParseResult
+type queryCallback func(s *Selection, opts *FindOnPage) *Item
 
 // NewFeed return a new Site2RSS feed object
 func NewFeed(source string, title string) *Site2RSS {
@@ -137,6 +139,22 @@ func (s *Site2RSS) GetItemsFromLinks(f itemCallback) *Site2RSS {
 	return s
 }
 
+// GetItemsFromQuery extracts feed items from a query by source page
+func (s *Site2RSS) GetItemsFromQuery(docPattern string, f queryCallback) *Site2RSS {
+	var err error
+	s.sourceDoc, err = goquery.NewDocument(s.SourceURL.String())
+	if err == nil {
+		s.sourceDoc.Find(docPattern).Each(func(i int, sel *goquery.Selection) {
+			item := f(sel, s.parseOpts)
+			if len(s.feed.Items) < s.MaxFeedItems && item != nil {
+				item.Link.Href = s.AbsoluteURL(item.Link.Href)
+				s.feed.Items = append(s.feed.Items, item)
+			}
+		})
+	}
+	return s
+}
+
 // GetItemsFromSourcePage extracts feed items from source page
 func (s *Site2RSS) GetItemsFromSourcePage(f pageCallback) *Site2RSS {
 	if len(s.Links) > 0 {
@@ -158,7 +176,7 @@ func (s *Site2RSS) GetItemsFromSourcePage(f pageCallback) *Site2RSS {
 				if err == nil {
 					s.feed.Items[i].Created = created
 				} else {
-					s.feed.Items[i].Created = humanTimeParse(parse.Dates[i])
+					s.feed.Items[i].Created = HumanTimeParse(parse.Dates[i])
 				}
 			}
 			if len(parse.Images) >= len(s.Links) && parse.Images[i] != "" {

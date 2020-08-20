@@ -124,3 +124,81 @@ func main() {
     http.ListenAndServe(":3000", nil)
 }
 ```
+
+### Parse feed items from a query by source page
+
+```go
+package main
+
+import (
+    "net/http"
+
+    "github.com/n0madic/site2rss"
+)
+
+func rssRequest(w http.ResponseWriter, r *http.Request) {
+    rss, err := site2rss.NewFeed("https://www.sciencealert.com/the-latest", "Science Alert").
+        SetParseOptions(&site2rss.FindOnPage{
+            Title:       ".titletext",
+            Date:        ".time",
+            Description: ".introtext-feature",
+            URL:         ".titletext > a",
+        }).
+        GetItemsFromQuery(".article-item", site2rss.ParseQuery).
+        GetAtom()
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        w.Write([]byte(err.Error()))
+    } else {
+        w.Header().Set("Content-Type", "application/xml")
+        w.Write([]byte(rss))
+    }
+}
+
+func main() {
+    http.HandleFunc("/", rssRequest)
+    http.ListenAndServe(":3000", nil)
+}
+```
+
+#### Or with user-defined function:
+
+```go
+package main
+
+import (
+    "net/http"
+
+    "github.com/n0madic/site2rss"
+)
+
+func rssRequest(w http.ResponseWriter, r *http.Request) {
+    rss, err := site2rss.NewFeed("https://www.sciencealert.com/the-latest", "Science Alert").
+        GetItemsFromQuery(".article-item",
+            func(doc *site2rss.Selection, opts *site2rss.FindOnPage) *site2rss.Item {
+                url := "https://www.sciencealert.com" +
+                    doc.Find(".titletext > a").First().AttrOr("href", "")
+                desc, _ := doc.Find(".introtext-feature").Html()
+                return &site2rss.Item{
+                    Title:       doc.Find(".titletext").First().Text(),
+                    Link:        &site2rss.Link{Href: url},
+                    Id:          url,
+                    Description: desc,
+                    Created:     site2rss.HumanTimeParse(doc.Find(".time").First().Text()),
+                }
+            }).GetRSS()
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        w.Write([]byte(err.Error()))
+    } else {
+        w.Header().Set("Content-Type", "application/xml")
+        w.Write([]byte(rss))
+    }
+}
+
+func main() {
+    http.HandleFunc("/", rssRequest)
+    http.ListenAndServe(":3000", nil)
+}
+
+```

@@ -29,7 +29,7 @@ func ItemParse(doc *Document, opts *FindOnPage) *Item {
 			var err error
 			item.Created, err = time.Parse(opts.DateFormat, dateStr)
 			if err != nil {
-				item.Created = humanTimeParse(dateStr)
+				item.Created = HumanTimeParse(dateStr)
 			}
 		}
 	}
@@ -59,4 +59,40 @@ func ParsePage(doc *Document, opts *FindOnPage) *ParseResult {
 			return strings.TrimSpace(sel.Text())
 		}),
 	}
+}
+
+// ParseQuery is default function for parsing items from a query by single page
+func ParseQuery(sel *Selection, opts *FindOnPage) *Item {
+	url := sel.Find(opts.URL).First().AttrOr("href", "")
+	if url != "" {
+		item := &Item{
+			Title: strings.TrimSpace(sel.Find(opts.Title).First().Text()),
+			Link:  &Link{Href: url},
+			Id:    url,
+		}
+		if opts.Author != "" {
+			item.Author = &Author{Name: strings.TrimSpace(sel.Find(opts.Author).First().Text())}
+		}
+		if opts.Description != "" {
+			item.Description, _ = sel.Find(opts.Description).Html()
+		}
+		if opts.Image != "" {
+			imageStr := sel.Find(opts.Title).First().AttrOr("src", "")
+			if imageStr != "" {
+				item.Enclosure = genEnclosure(imageStr)
+			}
+		}
+		if opts.Date != "" {
+			dateStr := strings.TrimSpace(sel.Find(opts.Date).First().Text())
+			if dateStr != "" {
+				var err error
+				item.Created, err = time.Parse(opts.DateFormat, dateStr)
+				if err != nil {
+					item.Created = HumanTimeParse(dateStr)
+				}
+			}
+		}
+		return item
+	}
+	return nil
 }
