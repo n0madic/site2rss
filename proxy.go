@@ -17,6 +17,9 @@ type Author = feeds.Author
 // Enclosure proxy type
 type Enclosure = feeds.Enclosure
 
+// Feed proxy type
+type Feed = feeds.Feed
+
 // Item proxy type
 type Item = feeds.Item
 

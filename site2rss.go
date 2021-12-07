@@ -24,7 +24,7 @@ type FindOnPage struct {
 // Site2RSS object
 type Site2RSS struct {
 	baseURL      string
-	feed         *feeds.Feed
+	Feed         *Feed
 	Links        []string
 	MaxFeedItems int
 	parseOpts    *FindOnPage
@@ -56,7 +56,7 @@ func NewFeed(source string, title string) *Site2RSS {
 	}
 	s.baseURL = fmt.Sprintf("%s://%s", sourceURL.Scheme, sourceURL.Hostname())
 	s.SourceURL = sourceURL
-	s.feed = &feeds.Feed{
+	s.Feed = &Feed{
 		Title: title,
 		Link:  &feeds.Link{Href: s.baseURL},
 	}
@@ -123,7 +123,7 @@ func (s *Site2RSS) GetLinks(linkPattern string) *Site2RSS {
 
 // GetItemsFromLinks extracts details from remote links using a user-defined function
 func (s *Site2RSS) GetItemsFromLinks(f itemCallback) *Site2RSS {
-	s.feed.Items = make([]*feeds.Item, len(s.Links))
+	s.Feed.Items = make([]*feeds.Item, len(s.Links))
 	for i := 0; i < len(s.Links); i++ {
 		s.wg.Add(1)
 		go func(url string, item **feeds.Item) {
@@ -133,7 +133,7 @@ func (s *Site2RSS) GetItemsFromLinks(f itemCallback) *Site2RSS {
 				s.MakeAllLinksAbsolute(itemDoc)
 				*item = f(itemDoc, s.parseOpts)
 			}
-		}(s.Links[i], &s.feed.Items[i])
+		}(s.Links[i], &s.Feed.Items[i])
 	}
 	s.wg.Wait()
 	return s
@@ -146,9 +146,9 @@ func (s *Site2RSS) GetItemsFromQuery(docPattern string, f queryCallback) *Site2R
 	if err == nil {
 		s.sourceDoc.Find(docPattern).Each(func(i int, sel *goquery.Selection) {
 			item := f(sel, s.parseOpts)
-			if len(s.feed.Items) < s.MaxFeedItems && item != nil {
+			if len(s.Feed.Items) < s.MaxFeedItems && item != nil {
 				item.Link.Href = s.AbsoluteURL(item.Link.Href)
-				s.feed.Items = append(s.feed.Items, item)
+				s.Feed.Items = append(s.Feed.Items, item)
 			}
 		})
 	}
@@ -158,32 +158,32 @@ func (s *Site2RSS) GetItemsFromQuery(docPattern string, f queryCallback) *Site2R
 // GetItemsFromSourcePage extracts feed items from source page
 func (s *Site2RSS) GetItemsFromSourcePage(f pageCallback) *Site2RSS {
 	if len(s.Links) > 0 {
-		s.feed.Items = make([]*feeds.Item, len(s.Links))
+		s.Feed.Items = make([]*feeds.Item, len(s.Links))
 		for i := 0; i < len(s.Links); i++ {
-			s.feed.Items[i] = &feeds.Item{
+			s.Feed.Items[i] = &feeds.Item{
 				Id:   s.Links[i],
 				Link: &feeds.Link{Href: s.Links[i]},
 			}
 			parse := f(s.sourceDoc, s.parseOpts)
 			if len(parse.Authors) >= len(s.Links) && parse.Authors[i] != "" {
-				s.feed.Items[i].Author = &feeds.Author{Name: parse.Authors[i]}
+				s.Feed.Items[i].Author = &feeds.Author{Name: parse.Authors[i]}
 			}
 			if len(parse.Descriptions) >= len(s.Links) {
-				s.feed.Items[i].Description = parse.Descriptions[i]
+				s.Feed.Items[i].Description = parse.Descriptions[i]
 			}
 			if len(parse.Dates) >= len(s.Links) && parse.Dates[i] != "" {
 				created, err := time.Parse(s.parseOpts.DateFormat, parse.Dates[i])
 				if err == nil {
-					s.feed.Items[i].Created = created
+					s.Feed.Items[i].Created = created
 				} else {
-					s.feed.Items[i].Created = HumanTimeParse(parse.Dates[i])
+					s.Feed.Items[i].Created = HumanTimeParse(parse.Dates[i])
 				}
 			}
 			if len(parse.Images) >= len(s.Links) && parse.Images[i] != "" {
-				s.feed.Items[i].Enclosure = genEnclosure(s.AbsoluteURL(parse.Images[i]))
+				s.Feed.Items[i].Enclosure = genEnclosure(s.AbsoluteURL(parse.Images[i]))
 			}
 			if len(parse.Titles) >= len(s.Links) {
-				s.feed.Items[i].Title = parse.Titles[i]
+				s.Feed.Items[i].Title = parse.Titles[i]
 			}
 		}
 	}
@@ -192,10 +192,10 @@ func (s *Site2RSS) GetItemsFromSourcePage(f pageCallback) *Site2RSS {
 
 // GetAtom return feed xml
 func (s *Site2RSS) GetAtom() (string, error) {
-	return s.feed.ToAtom()
+	return s.Feed.ToAtom()
 }
 
 // GetRSS return feed xml
 func (s *Site2RSS) GetRSS() (string, error) {
-	return s.feed.ToRss()
+	return s.Feed.ToRss()
 }
