@@ -89,14 +89,14 @@ func (s *Site2RSS) AbsoluteURL(rpath string) string {
 func (s *Site2RSS) MakeAllLinksAbsolute(doc *Document) {
 	doc.Find("a,img").Each(func(i int, sel *goquery.Selection) {
 		if link, ok := sel.Attr("src"); link != "" && ok {
-			u, _ := url.Parse(link)
-			if !u.IsAbs() {
+			u, err := url.Parse(link)
+			if err == nil && !u.IsAbs() {
 				sel.SetAttr("src", s.AbsoluteURL(link))
 			}
 		}
 		if link, ok := sel.Attr("href"); link != "" && ok {
-			u, _ := url.Parse(link)
-			if !u.IsAbs() {
+			u, err := url.Parse(link)
+			if err == nil && !u.IsAbs() {
 				sel.SetAttr("href", s.AbsoluteURL(link))
 			}
 		}
