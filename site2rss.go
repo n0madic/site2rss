@@ -106,7 +106,7 @@ func (s *Site2RSS) MakeAllLinksAbsolute(doc *Document) {
 // GetLinks get a list of links by pattern
 func (s *Site2RSS) GetLinks(linkPattern string) *Site2RSS {
 	var err error
-	s.sourceDoc, err = goquery.NewDocument(s.SourceURL.String())
+	s.sourceDoc, err = getNewDocumentFromURL(s.SourceURL.String())
 	if err == nil {
 		links := s.sourceDoc.Find(linkPattern).Map(func(i int, sel *goquery.Selection) string {
 			link, _ := sel.Attr("href")
@@ -128,7 +128,7 @@ func (s *Site2RSS) GetItemsFromLinks(f itemCallback) *Site2RSS {
 		s.wg.Add(1)
 		go func(url string, item **feeds.Item) {
 			defer s.wg.Done()
-			itemDoc, err := goquery.NewDocument(url)
+			itemDoc, err := getNewDocumentFromURL(url)
 			if err == nil {
 				s.MakeAllLinksAbsolute(itemDoc)
 				*item = f(itemDoc, s.parseOpts)
@@ -142,7 +142,7 @@ func (s *Site2RSS) GetItemsFromLinks(f itemCallback) *Site2RSS {
 // GetItemsFromQuery extracts feed items from a query by source page
 func (s *Site2RSS) GetItemsFromQuery(docPattern string, f queryCallback) *Site2RSS {
 	var err error
-	s.sourceDoc, err = goquery.NewDocument(s.SourceURL.String())
+	s.sourceDoc, err = getNewDocumentFromURL(s.SourceURL.String())
 	if err == nil {
 		s.sourceDoc.Find(docPattern).Each(func(i int, sel *goquery.Selection) {
 			item := f(sel, s.parseOpts)
