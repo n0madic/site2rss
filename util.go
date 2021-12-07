@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"mime"
 	"net/http"
+	"net/url"
 	"path"
 	"time"
 
@@ -23,16 +24,28 @@ func genEnclosure(image string) *feeds.Enclosure {
 	}
 }
 
-func getNewDocumentFromURL(url string) (*goquery.Document, error) {
-	res, err := http.Get(url)
+func getNewDocumentFromURL(sourceURL string) (*goquery.Document, error) {
+	res, err := http.Get(sourceURL)
 	if err != nil {
 		return nil, err
 	}
 	defer res.Body.Close()
+
 	if res.StatusCode != 200 {
 		return nil, fmt.Errorf("status code error: %d %s", res.StatusCode, res.Status)
 	}
-	return goquery.NewDocumentFromReader(res.Body)
+
+	doc, err := goquery.NewDocumentFromReader(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	doc.Url, err = url.Parse(sourceURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid url")
+	}
+
+	return doc, nil
 }
 
 // HumanTimeParse from string
