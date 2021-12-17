@@ -3,11 +3,24 @@ package site2rss
 import (
 	"fmt"
 	"net/url"
+	"strings"
 	"sync"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/gorilla/feeds"
 )
+
+// Filters for item cleaning
+type Filters struct {
+	// Skip item with the following words in the description
+	Descriptions []string
+	// Remove the following selectors from content
+	Selectors []string
+	// Remove blocks of text that contain the following words
+	Text []string
+	// Skip items with the following words in the title
+	Titles []string
+}
 
 // FindOnPage settings for parse page to feed item
 type FindOnPage struct {
@@ -181,6 +194,46 @@ func (s *Site2RSS) GetItemsFromSourcePage(f pageCallback) *Site2RSS {
 			}
 		}
 	}
+	return s
+}
+
+// FilterItems for clean items
+func (s *Site2RSS) FilterItems(filters Filters) *Site2RSS {
+	var items []*feeds.Item
+
+	for _, item := range s.Feed.Items {
+		if stringIsFiltered(item.Title, filters.Titles) ||
+			stringIsFiltered(item.Description, filters.Descriptions) {
+			continue
+		}
+
+		doc, err := goquery.NewDocumentFromReader(strings.NewReader(item.Description))
+		if err == nil {
+			doc.Find("script").Remove()
+
+			if len(filters.Selectors) > 0 {
+				doc.Find(strings.Join(filters.Selectors, ", ")).Remove()
+			}
+
+			if len(filters.Text) > 0 {
+				var searchText []string
+				for _, text := range filters.Text {
+					searchText = append(searchText, fmt.Sprintf("p:contains('%s')", text))
+					searchText = append(searchText, fmt.Sprintf("div:contains('%s')", text))
+				}
+				doc.Find(strings.Join(searchText, ", ")).Remove()
+			}
+
+			filteredContent, err := doc.Html()
+			if err == nil {
+				item.Description = filteredContent
+			}
+		}
+		items = append(items, item)
+	}
+
+	s.Feed.Items = items
+
 	return s
 }
 

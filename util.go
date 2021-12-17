@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
@@ -98,4 +99,13 @@ func ConvertToUTF8(str string, origEncoding string) string {
 	reader, _ := charset.NewReaderLabel(origEncoding, byteReader)
 	strBytes, _ = ioutil.ReadAll(reader)
 	return string(strBytes)
+}
+
+func stringIsFiltered(str string, filters []string) bool {
+	for _, filter := range filters {
+		if strings.Contains(strings.ToLower(str), strings.ToLower(filter)) {
+			return true
+		}
+	}
+	return false
 }

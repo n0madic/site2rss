@@ -202,3 +202,16 @@ func main() {
 }
 
 ```
+
+### Filter items
+
+You can filter feed items by titles, text in description, text blocks, or CSS selector
+
+```go
+site2rss.FilterItems(site2rss.Filters{
+    Descriptions: []string{"spam"},
+    Selectors: []string{".comments"},
+    Text: []string{"See also:"},
+    Titles: []string{"advertising"},
+})
+```
