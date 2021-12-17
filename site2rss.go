@@ -13,13 +13,13 @@ import (
 // Filters for item cleaning
 type Filters struct {
 	// Skip item with the following words in the description
-	Descriptions []string
+	Description []string
 	// Remove the following selectors from content
-	Selectors []string
+	Selector []string
 	// Remove blocks of text that contain the following words
 	Text []string
 	// Skip items with the following words in the title
-	Titles []string
+	Title []string
 }
 
 // FindOnPage settings for parse page to feed item
@@ -202,8 +202,8 @@ func (s *Site2RSS) FilterItems(filters Filters) *Site2RSS {
 	var items []*feeds.Item
 
 	for _, item := range s.Feed.Items {
-		if stringIsFiltered(item.Title, filters.Titles) ||
-			stringIsFiltered(item.Description, filters.Descriptions) {
+		if stringIsFiltered(item.Title, filters.Title) ||
+			stringIsFiltered(item.Description, filters.Description) {
 			continue
 		}
 
@@ -211,8 +211,8 @@ func (s *Site2RSS) FilterItems(filters Filters) *Site2RSS {
 		if err == nil {
 			doc.Find("script").Remove()
 
-			if len(filters.Selectors) > 0 {
-				doc.Find(strings.Join(filters.Selectors, ", ")).Remove()
+			if len(filters.Selector) > 0 {
+				doc.Find(strings.Join(filters.Selector, ", ")).Remove()
 			}
 
 			if len(filters.Text) > 0 {
