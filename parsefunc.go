@@ -2,7 +2,6 @@ package site2rss
 
 import (
 	"strings"
-	"time"
 )
 
 // ParseItem is default function for parsing items from remote page
@@ -26,11 +25,7 @@ func ParseItem(doc *Document, opts *FindOnPage) *Item {
 	if opts.Date != "" {
 		dateStr := strings.TrimSpace(doc.Find(opts.Date).First().Text())
 		if dateStr != "" {
-			var err error
-			item.Created, err = time.Parse(opts.DateFormat, dateStr)
-			if err != nil {
-				item.Created = HumanTimeParse(dateStr)
-			}
+			item.Created = TimeParse(opts.DateFormat, dateStr)
 		}
 	}
 	if opts.Description != "" {
@@ -85,11 +80,7 @@ func ParseQuery(sel *Selection, opts *FindOnPage) *Item {
 		if opts.Date != "" {
 			dateStr := strings.TrimSpace(sel.Find(opts.Date).First().Text())
 			if dateStr != "" {
-				var err error
-				item.Created, err = time.Parse(opts.DateFormat, dateStr)
-				if err != nil {
-					item.Created = HumanTimeParse(dateStr)
-				}
+				item.Created = TimeParse(opts.DateFormat, dateStr)
 			}
 		}
 		return item

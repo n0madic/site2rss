@@ -12,9 +12,24 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	timeparse "github.com/dsoprea/go-time-parse"
+	"github.com/goodsign/monday"
 	"github.com/gorilla/feeds"
 	"golang.org/x/net/html/charset"
 )
+
+func checkYear(date *time.Time) time.Time {
+	year, month, day := date.Date()
+	if year == 0 {
+		now := time.Now()
+		year = now.Year()
+		if month == time.January && day == 1 {
+			month = now.Month()
+			day = now.Day()
+		}
+		return time.Date(year, month, day, date.Hour(), date.Minute(), date.Second(), date.Nanosecond(), date.Location())
+	}
+	return *date
+}
 
 func genEnclosure(image string) *feeds.Enclosure {
 	return &feeds.Enclosure{
@@ -58,6 +73,22 @@ func HumanTimeParse(d string) time.Time {
 		return time.Now().Add(duration)
 	}
 	return time.Time{}
+}
+
+// TimeParse from string
+func TimeParse(layout, dateStr string) time.Time {
+	if layout != "" {
+		timeLocaleDetector := monday.NewLocaleDetector()
+		parsedDate, err := timeLocaleDetector.Parse(layout, dateStr)
+		if err == nil {
+			return checkYear(&parsedDate)
+		}
+		parsedDate, err = time.Parse(layout, dateStr)
+		if err == nil {
+			return checkYear(&parsedDate)
+		}
+	}
+	return HumanTimeParse(dateStr)
 }
 
 // ConvertToUTF8 string from any encoding

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/url"
 	"sync"
-	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/gorilla/feeds"
@@ -172,12 +171,7 @@ func (s *Site2RSS) GetItemsFromSourcePage(f pageCallback) *Site2RSS {
 				s.Feed.Items[i].Description = parse.Descriptions[i]
 			}
 			if len(parse.Dates) >= len(s.Links) && parse.Dates[i] != "" {
-				created, err := time.Parse(s.parseOpts.DateFormat, parse.Dates[i])
-				if err == nil {
-					s.Feed.Items[i].Created = created
-				} else {
-					s.Feed.Items[i].Created = HumanTimeParse(parse.Dates[i])
-				}
+				s.Feed.Items[i].Created = TimeParse(s.parseOpts.DateFormat, parse.Dates[i])
 			}
 			if len(parse.Images) >= len(s.Links) && parse.Images[i] != "" {
 				s.Feed.Items[i].Enclosure = genEnclosure(s.AbsoluteURL(parse.Images[i]))
