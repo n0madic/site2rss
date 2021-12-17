@@ -10,7 +10,7 @@ func TestParseItem(t *testing.T) {
 	opts := site2rss.FindOnPage{
 		Title:       ".article-title",
 		Author:      ".author-name-name",
-		Date:        ".author-name-date",
+		Date:        ".author-name-text > div:nth-child(2) > span",
 		DateFormat:  "2 January 2006",
 		Description: ".article-fulltext",
 	}
