@@ -9,5 +9,5 @@ require (
 	github.com/goodsign/monday v1.0.1
 	github.com/gorilla/feeds v1.1.1
 	github.com/kr/pretty v0.3.1 // indirect
-	golang.org/x/net v0.10.0
+	golang.org/x/net v0.17.0
 )
