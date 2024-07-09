@@ -8,14 +8,14 @@ import (
 
 func TestParseItem(t *testing.T) {
 	opts := site2rss.FindOnPage{
-		Title:       ".article-title",
-		Author:      ".author-name-name",
-		Date:        ".author-name-text > div:nth-child(2) > span",
-		DateFormat:  "2 January 2006",
-		Description: ".article-fulltext",
+		Title:       "div.wrapper.body > h1",
+		Author:      "span.author > a:nth-child(1)",
+		Date:        "span.date",
+		DateFormat:  "Jan 2, 2006",
+		Description: ".content",
 	}
-	rss := site2rss.NewFeed("https://www.sciencealert.com/the-latest", "Science Alert").
-		GetLinks("div.titletext > a").
+	rss := site2rss.NewFeed("https://about.gitlab.com/releases/categories/releases/", "GitLab releases").
+		GetLinks(".blog-hero-title, .blog-card-title").
 		SetParseOptions(&opts).
 		GetItemsFromLinks(site2rss.ParseItem)
 	testFeed(t, rss.Feed, &opts)
