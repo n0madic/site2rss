@@ -8,7 +8,7 @@ import (
 
 func TestParseItem(t *testing.T) {
 	opts := site2rss.FindOnPage{
-		Title:       "div.wrapper.body > h1",
+		Title:       "h1",
 		Author:      "span.author > a:nth-child(1)",
 		Date:        "span.date",
 		DateFormat:  "Jan 2, 2006",
